@@ -94,6 +94,8 @@ cmake -G "MinGW Makefiles" ^
   ..
 ```
 
+**Note:** if you're re-running `cmake` in an existing `build` folder (for example, after a failed first attempt), delete `build\CMakeCache.txt` first. Otherwise CMake may keep a stale, empty `CMAKE_BUILD_TYPE` from a previous run even though you're passing `-DCMAKE_BUILD_TYPE=Release` again — which also causes it to pick up `proj`/`libaec` from vcpkg's `debug\lib\` instead of `lib\`, producing a slower, unoptimized binary.
+
 ---
 
 ## 6. Compiling (The 99% Linker Error)
@@ -115,7 +117,7 @@ If the automated link fails, open the `link.txt` file located at:
 `C:\project\xygrib\build\src\CMakeFiles\XyGrib.dir\link.txt`
 
 Inside, you will find the exact command the linker was trying to run. Copy that entire command, paste it into your terminal, and adjust it manually:
-1. Ensure the `.a` library paths match exactly what is in `C:\opt\lib` and `C:\project\vcpkg\installed\x86-mingw-static\debug\lib`.
+1. Ensure the `.a` library paths match exactly what is in `C:\opt\lib` and `C:\project\vcpkg\installed\x86-mingw-static\lib` (or `debug\lib` if you kept the unoptimized build from a stale cache — see the note in step 5).
 2. Reorder the `-l` flags so that libraries that depend on others come *first*.
 3. Re-run the command. If successful, it will output `XyGrib.exe`.
 
@@ -158,6 +160,17 @@ C:\XyGrib_Portable\
 ├── ...
 └── XyGrib.exe
 ```
+
+---
+
+### 7.3. Copy the MinGW Runtime DLLs
+`XyGrib.exe` is dynamically linked against the MinGW runtime (confirmed by inspecting `build\src\CMakeFiles\XyGrib.dir\link.txt` — it has no `-static-libgcc -static-libstdc++ -static` flags). `windeployqt` only handles Qt's own DLLs, so these three files still need to be copied manually from `C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\` into `C:\XyGrib_Portable\`:
+
+- `libgcc_s_dw2-1.dll` (or `libgcc_s_seh-1.dll`, depending on your toolchain build — check which one exists in that folder)
+- `libstdc++-6.dll`
+- `libwinpthread-1.dll`
+
+Without these, `XyGrib.exe` will fail to start on any machine that doesn't have Qt/MinGW installed, even though the portable folder looks complete otherwise.
 
 ---
 
