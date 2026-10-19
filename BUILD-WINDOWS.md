@@ -1,6 +1,6 @@
 # Building XyGrib for Windows (MinGW + Qt 5.13.2)
 
-This document describes how to build XyGrib on Windows using the open-source MinGW toolchain. It documents the exact environment, the manual linker workaround, and the runtime deployment steps needed to get a fully functional portable `XyGrib.exe` with the `fix-swell-241` branch.
+This document describes how to build XyGrib on Windows using the open-source MinGW toolchain. It combines the original project setup with real-world fixes for modern environments, including the workaround for the 100% linker error and the missing toolbar icons.
 
 **Note:** This build process was verified with **CMake 4.3.5**, **Qt 5.13.2 (MinGW 7.3.0 32-bit)**, and **vcpkg**.
 
@@ -11,16 +11,16 @@ This document describes how to build XyGrib on Windows using the open-source Min
 You need the following installed before starting:
 
 - **Qt 5.13.2** with the **MinGW 7.3.0 32-bit** kit.
-  (The 32-bit requirement is strict: the original `thirdpartylib.zip` and the `libaec` static libraries are compiled for 32-bit.)
-- **CMake** (version 3.14 or newer; tested with 4.3.5).
-- **Git** (optional, for cloning the repository).
+  Get the Qt online installer from [qt.io/download](https://qt.io/download). When choosing components, select exactly `Qt 5.13.2` → `MinGW 7.3.0 32-bit`. This specific version/kit combo matters.
+- **CMake** (version 3.14 or newer; tested with 4.3.5). Tick "add to PATH" during the install.
+- **Git for Windows**.
 - **vcpkg** (for installing `libaec` and `proj`).
 
 ---
 
 ## 2. Setting up the Dependencies
 
-XyGrib depends on several third-party C/C++ libraries. Historically, the project provided a pre-compiled `thirdpartylib.zip` (from 2018). Since those binaries are outdated, modern builds should compile the dependencies using `vcpkg` or place pre-compiled `.a`/`.dll.a` files in a custom directory.
+XyGrib depends on several third-party C/C++ libraries. Historically, the project provided a pre-compiled `thirdpartylib.zip` (from 2018). Since those binaries are often incompatible with modern compilers, the reliable modern approach is to use `vcpkg` for some dependencies and a custom `C:\opt` directory for others.
 
 ### 2.1. Install vcpkg dependencies
 Open a terminal (PowerShell or CMD) and run:
@@ -45,9 +45,38 @@ C:\opt\
 
 ---
 
-## 3. Configuring with CMake
+## 3. Clone the patched branch
 
-Open the **Qt 5.13.2 (MinGW 7.3.0 32-bit)** command prompt. Navigate to your XyGrib source directory and create a `build` folder:
+Open Git Bash:
+
+```bash
+git clone -b fix-swell-241 https://github.com/DrCalambre/XyGrib C:\project\xygrib
+```
+
+*(If the fix has been merged into `frfa/XyGrib` main by the time you read this, you can clone that instead — but double-check it's a clean build first).*
+
+**Note:** the `fix-swell-241` branch actually carries two commits — the swell patch itself, and an earlier build fix that adds a missing `aecunpack.c` file plus a CMakeLists update for g2clib. Both are needed to compile cleanly from a fresh clone.
+
+---
+
+## 4. Set environment variables
+
+In a plain `cmd` or `PowerShell` window (before building):
+
+```cmd
+set EXTERNLIBS=C:\opt
+set PATH=C:\Qt\Tools\mingw730_32\bin;C:\Qt\5.13.2\mingw73_32\bin;%PATH%
+set CC=gcc
+set CXX=g++
+```
+
+**One gotcha:** if `sh.exe` (from Git Bash) is in your PATH in that terminal, CMake will refuse to generate MinGW Makefiles. Use a plain cmd/PowerShell window without Git Bash's `sh.exe` on the PATH.
+
+---
+
+## 5. Configuring with CMake
+
+Open the **Qt 5.13.2 (MinGW 7.3.0 32-bit)** command prompt. Navigate to your source directory and create a `build` folder:
 
 ```cmd
 cd C:\project\xygrib
@@ -67,7 +96,7 @@ cmake -G "MinGW Makefiles" ^
 
 ---
 
-## 4. Compiling (The 99% Linker Error)
+## 6. Compiling (The 99% Linker Error)
 
 Run the build:
 
@@ -94,23 +123,26 @@ Inside, you will find the exact command the linker was trying to run. Copy that 
 
 ---
 
-## 5. Creating the Portable Folder (Runtime)
+## 7. Creating the Portable Folder (Runtime)
 
 To run `XyGrib.exe`, you need the runtime `.dll` files and the `data` folder. Do **not** copy the `.dll` files from the compilation folders (like `/opt` or `vcpkg`), as those are linker libraries, not runtime libraries.
 
-### 5.1. Deploy Qt DLLs
-Open the Qt command prompt again, navigate to the folder where `XyGrib.exe` was built (`C:\project\xygrib\build\src`), and run:
+### 7.1. Create the portable folder and deploy Qt DLLs
+Create a dedicated folder for your portable build (e.g., `C:\XyGrib_Portable`), copy `XyGrib.exe` from `C:\project\xygrib\build\src\` into it, and open a Qt command prompt in that new folder:
 
 ```cmd
+mkdir C:\XyGrib_Portable
+copy C:\project\xygrib\build\src\XyGrib.exe C:\XyGrib_Portable\
+cd C:\XyGrib_Portable
 windeployqt XyGrib.exe
 ```
 
-This will automatically copy the correct Qt `.dll` files (and the necessary plugin folders like `platforms`, `styles`, `imageformats`) into the same directory.
+This will automatically copy the correct Qt `.dll` files (and the necessary plugin folders like `platforms`, `styles`, `imageformats`) directly into `C:\XyGrib_Portable`.
 
-### 5.2. Copy the Data Folder (Icons and Maps)
+### 7.2. Copy the Data Folder (Icons and Maps)
 If you launch the application and the toolbar icons are missing (empty buttons), it means XyGrib cannot find its resources. 
 
-Copy the entire `data` folder from the root of your source repository (`C:\project\xygrib\data`) into the same directory as your `XyGrib.exe`.
+Copy the entire `data` folder from the root of your source repository (`C:\project\xygrib\data`) into `C:\XyGrib_Portable\`.
 
 Your final portable folder should look like this:
 ```text
@@ -126,14 +158,17 @@ C:\XyGrib_Portable\
 
 ---
 
-## 6. Verification
+## 8. Verification
 
 Once the portable folder is assembled, launch `XyGrib.exe`, load a GRIB2 file (e.g., generated by the `xygrib-noaa.sh` downloader), and verify:
 1. The toolbar icons are visible.
 2. The "Swell" layer is accessible and displays data (requires the `fix-swell-241` branch).
 
-*(See the screenshots in the main README for an example of a successful run.)*
-
 ---
 
+If this works for you, it might be worth building a release `.exe` and attaching it to the fork's GitHub releases page, so other non-Linux users on this thread don't have to repeat the whole toolchain setup.
+
 Fair winds! ⛵
+```
+
+---
