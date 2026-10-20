@@ -11,7 +11,9 @@ This document describes how to build XyGrib on Windows using the open-source Min
 You need the following installed before starting:
 
 - **Qt 5.13.2** with the **MinGW 7.3.0 32-bit** kit.
-  Get the Qt online installer from [qt.io/download](https://qt.io/download). When choosing components, select exactly `Qt 5.13.2` → `MinGW 7.3.0 32-bit`. This specific version/kit combo matters.
+  Download the offline installer directly from the Qt archive:
+  **https://download.qt.io/new_archive/qt/5.13/5.13.2/qt-opensource-windows-x86-5.13.2.exe** (≈3.6 GB).
+  When choosing components, select exactly `Qt 5.13.2` → `MinGW 7.3.0 32-bit`. This specific version/kit combo matters.
 - **CMake** (version 3.14 or newer; tested with 4.3.5). Tick "add to PATH" during the install.
 - **Git for Windows**.
 - **vcpkg** (for installing `libaec` and `proj`).
@@ -135,17 +137,15 @@ If you are using the modern PROJ installed via `vcpkg` (step 2.1), the link step
 Modern PROJ uses SQLite internally to store its database of coordinate transformations. However, CMake sometimes fails to pass the SQLite library to the linker when it resolves PROJ dynamically from `vcpkg`.
 
 **The Solution:**
-When you do the **Manual Linking** (described above), append the SQLite library path explicitly at the very end of your manual `g++.exe` command:
+Follow the same **Manual Linking** workaround as Known Issue 1 — rebuild `objects.a` and link with `--whole-archive` — but append the SQLite library path and flag at the very end of the final link command:
 
 ```cmd
--LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\XyGrib.dir/objects.a
+C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\ar.exe qc CMakeFiles\XyGrib.dir/objects.a @CMakeFiles\XyGrib.dir\objects1.rsp
+C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\c++.exe -mwindows -Wl,--whole-archive CMakeFiles\XyGrib.dir/objects.a -Wl,--no-whole-archive -o XyGrib.exe -Wl,--out-implib,libXyGrib.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\XyGrib.dir\linkLibs.rsp -LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3
 ```
 
-Your final command should look something like this:
-```cmd
-"C:/Qt/Qt5.13.2/Tools/mingw730_32/bin/g++.exe" -Wl,-subsystem,windows -mthreads -o XyGrib.exe @CMakeFiles\XyGrib.dir\objects1.rsp @CMakeFiles\XyGrib.dir\linkLibs.rsp -LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3
-```
-*(Run this from the `C:\project\xygrib\build\src` directory where the `.rsp` files live).*
+*(Run this from `C:\project\xygrib\build\src`, where the `.rsp` files live. This is the exact command CMake generates in `link.txt`, with `-LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3` appended at the end.)*
 
 If you see the command finish without errors, you will have a valid `XyGrib.exe` (around 113 MB) in that folder.
 
