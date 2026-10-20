@@ -111,7 +111,7 @@ Run the build:
 mingw32-make -j4
 ```
 
-### ⚠️ Known Issue: Fails at 100% (Linker Error)
+### ⚠️ Known Issue 1: The 99% Linker Error
 The compilation of the `.cpp` files will succeed (100%), but the final link step (`c++.exe ... -o XyGrib.exe`) **may fail** with errors like `undefined reference to ...`.
 
 **Why does this happen?**
@@ -127,6 +127,28 @@ Inside, you will find the exact command the linker was trying to run. Copy that 
 3. Re-run the command. If successful, it will output `XyGrib.exe`.
 
 *(Once `XyGrib.exe` exists, you can safely ignore the `make` error in the future; the executable is already built.)*
+
+### ⚠️ Known Issue 2: Undefined references to `sqlite3` (when using modern PROJ from vcpkg)
+If you are using the modern PROJ installed via `vcpkg` (step 2.1), the link step might fail with hundreds of lines like `undefined reference to 'sqlite3_open_v2'` or `undefined reference to 'sqlite3_exec'`.
+
+**Why does this happen?**
+Modern PROJ uses SQLite internally to store its database of coordinate transformations. However, CMake sometimes fails to pass the SQLite library to the linker when it resolves PROJ dynamically from `vcpkg`.
+
+**The Solution:**
+When you do the **Manual Linking** (described above), append the SQLite library path explicitly at the very end of your manual `g++.exe` command:
+
+```cmd
+-LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3
+```
+
+Your final command should look something like this:
+```cmd
+"C:/Qt/Qt5.13.2/Tools/mingw730_32/bin/g++.exe" -Wl,-subsystem,windows -mthreads -o XyGrib.exe @CMakeFiles\XyGrib.dir\objects1.rsp @CMakeFiles\XyGrib.dir\linkLibs.rsp -LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3
+```
+*(Run this from the `C:\project\xygrib\build\src` directory where the `.rsp` files live).*
+
+If you see the command finish without errors, you will have a valid `XyGrib.exe` (around 113 MB) in that folder.
+```
 
 ---
 
