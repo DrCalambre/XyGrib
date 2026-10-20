@@ -148,7 +148,6 @@ Your final command should look something like this:
 *(Run this from the `C:\project\xygrib\build\src` directory where the `.rsp` files live).*
 
 If you see the command finish without errors, you will have a valid `XyGrib.exe` (around 113 MB) in that folder.
-```
 
 ---
 
