@@ -48,7 +48,7 @@ C:\opt\
 
 **Important notes:**
 - **Do not use the 2018 PROJ library.** The bundle includes an older PROJ version that relies on `proj_api.h`. The current XyGrib codebase requires the modern PROJ API (`proj.h`), so you must use the one installed via vcpkg (step 2.1) instead.
-- **Dynamic OpenJPEG:** The bundle provides `libopenjp2.dll.a`, which is an import library for *dynamic* linking. You will also need `libopenjp2.dll` itself in your portable runtime folder (see step 7.3).
+- **Dynamic OpenJPEG:** The bundle provides `libopenjp2.dll.a`, which is an import library for *dynamic* linking. You will also need `libopenjp2.dll` itself in your portable runtime folder (see step 7.4).
 
 ---
 
@@ -155,7 +155,21 @@ If you see the command finish without errors, you will have a valid `XyGrib.exe`
 
 To run `XyGrib.exe`, you need the runtime `.dll` files and the `data` folder. Do **not** copy the `.dll` files from the compilation folders (like `/opt` or `vcpkg`), as those are linker libraries, not runtime libraries.
 
-### 7.1. Create the portable folder and deploy Qt DLLs
+### 7.1. (Optional) Reduce the executable size with `strip`
+
+The `XyGrib.exe` produced by the link step includes debug symbols and function names that are only useful while developing. For a build you plan to hand to other people (friends, users, a GitHub Release), you can remove them with MinGW's `strip`:
+
+```cmd
+strip --strip-unneeded XyGrib.exe
+```
+
+This typically cuts the file size substantially (often by more than half), with **zero functional impact** — the program runs exactly the same.
+
+**Trade-off:** after stripping, a crash report will show raw memory addresses instead of function names and line numbers, making remote debugging harder. Since you can always rebuild with symbols if a crash needs to be diagnosed, this is a fine trade for a distributed build. If you want to keep the ability to debug, keep an unstripped copy for yourself and only distribute the stripped one.
+
+Run this from `C:\project\xygrib\build\src\` **before** copying the binary to the portable folder (step 7.2).
+
+### 7.2. Create the portable folder and deploy Qt DLLs
 Create a dedicated folder for your portable build (e.g., `C:\XyGrib_Portable`), copy `XyGrib.exe` from `C:\project\xygrib\build\src\` into it, and open a Qt command prompt in that new folder:
 
 ```cmd
@@ -167,7 +181,7 @@ windeployqt XyGrib.exe
 
 This will automatically copy the correct Qt `.dll` files (and the necessary plugin folders like `platforms`, `styles`, `imageformats`) directly into `C:\XyGrib_Portable`.
 
-### 7.2. Copy the Data Folder (Icons and Maps)
+### 7.3. Copy the Data Folder (Icons and Maps)
 If you launch the application and the toolbar icons are missing (empty buttons), it means XyGrib cannot find its resources. 
 
 Copy the entire `data` folder from the root of your source repository (`C:\project\xygrib\data`) into `C:\XyGrib_Portable\`.
@@ -189,7 +203,7 @@ C:\XyGrib_Portable\
 
 ---
 
-### 7.3. Copy the MinGW Runtime DLLs and OpenJPEG
+### 7.4. Copy the MinGW Runtime DLLs and OpenJPEG
 `XyGrib.exe` is dynamically linked against the MinGW runtime (confirmed by inspecting `build\src\CMakeFiles\XyGrib.dir\link.txt` — it has no `-static-libgcc -static-libstdc++ -static` flags). Additionally, OpenJPEG is linked dynamically. 
 
 `windeployqt` only handles Qt's own DLLs, so these files still need to be copied manually into `C:\XyGrib_Portable\`:
