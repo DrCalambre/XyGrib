@@ -20,7 +20,7 @@ You need the following installed before starting:
 
 ## 2. Setting up the Dependencies
 
-XyGrib depends on several third-party C/C++ libraries. Historically, the project provided a pre-compiled `thirdpartylib.zip` (from 2018). Since those binaries are often incompatible with modern compilers, the reliable modern approach is to use `vcpkg` for some dependencies and a custom `C:\opt` directory for others.
+XyGrib depends on several third-party C/C++ libraries. Historically, the project provided a pre-compiled `thirdpartylib.zip` (from 2018). Since some of those binaries are incompatible with the modern XyGrib codebase, the reliable approach is to combine the 2018 bundle for the core libraries with `vcpkg` for the outdated ones.
 
 ### 2.1. Install vcpkg dependencies
 Open a terminal (PowerShell or CMD) and run:
@@ -33,7 +33,10 @@ cd vcpkg
 ```
 
 ### 2.2. Prepare the `C:\opt` directory
-Some libraries (`bzip2`, `libnova`, `openjpeg`, `png`, `zlib`) are linked directly from a custom path. In the verified build, these were placed in `C:\opt\` with the following structure:
+
+The remaining libraries (`bzip2`, `libnova`, `openjpeg`, `png`, `zlib`) are linked directly from a custom path. In the verified build, these were taken from the **original pre-compiled `thirdpartylib.zip` (from 2018)** provided by the OpenGribs project. Despite being old, these binaries still link correctly with Qt 5.13.2 / MinGW 7.3.0.
+
+Extract the zip and place the files in `C:\opt\` with this structure:
 
 ```text
 C:\opt\
@@ -41,7 +44,9 @@ C:\opt\
 └── lib\       (libbz2.a, libnova.a, libopenjp2.dll.a, libpng.a, libz.a)
 ```
 
-*(You can build these from source or download pre-compiled MinGW 32-bit `.a` files from a reliable source.)*
+**Important notes:**
+- **Do not use the 2018 PROJ library.** The bundle includes an older PROJ version that relies on `proj_api.h`. The current XyGrib codebase requires the modern PROJ API (`proj.h`), so you must use the one installed via vcpkg (step 2.1) instead.
+- **Dynamic OpenJPEG:** The bundle provides `libopenjp2.dll.a`, which is an import library for *dynamic* linking. You will also need `libopenjp2.dll` itself in your portable runtime folder (see step 7.3).
 
 ---
 
@@ -163,12 +168,18 @@ C:\XyGrib_Portable\
 
 ---
 
-### 7.3. Copy the MinGW Runtime DLLs
-`XyGrib.exe` is dynamically linked against the MinGW runtime (confirmed by inspecting `build\src\CMakeFiles\XyGrib.dir\link.txt` — it has no `-static-libgcc -static-libstdc++ -static` flags). `windeployqt` only handles Qt's own DLLs, so these three files still need to be copied manually from `C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\` into `C:\XyGrib_Portable\`:
+### 7.3. Copy the MinGW Runtime DLLs and OpenJPEG
+`XyGrib.exe` is dynamically linked against the MinGW runtime (confirmed by inspecting `build\src\CMakeFiles\XyGrib.dir\link.txt` — it has no `-static-libgcc -static-libstdc++ -static` flags). Additionally, OpenJPEG is linked dynamically. 
 
+`windeployqt` only handles Qt's own DLLs, so these files still need to be copied manually into `C:\XyGrib_Portable\`:
+
+**From `C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\`:**
 - `libgcc_s_dw2-1.dll` (or `libgcc_s_seh-1.dll`, depending on your toolchain build — check which one exists in that folder)
 - `libstdc++-6.dll`
 - `libwinpthread-1.dll`
+
+**From `C:\opt\bin\` (or wherever your 2018 `thirdpartylib.zip` extracted the binaries):**
+- `libopenjp2.dll`
 
 Without these, `XyGrib.exe` will fail to start on any machine that doesn't have Qt/MinGW installed, even though the portable folder looks complete otherwise.
 
@@ -191,4 +202,3 @@ Once the portable folder is assembled, launch `XyGrib.exe`, load a GRIB2 file (e
 If this works for you, it might be worth building a release `.exe` and attaching it to the fork's GitHub releases page, so other non-Linux users on this thread don't have to repeat the whole toolchain setup.
 
 Fair winds! ⛵
-```
