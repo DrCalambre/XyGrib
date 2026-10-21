@@ -95,12 +95,14 @@ Run CMake, passing the paths to both `vcpkg` and `C:\opt`:
 
 ```cmd
 cmake -G "MinGW Makefiles" ^
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
   -DCMAKE_BUILD_TYPE=Release ^
   -DCMAKE_PREFIX_PATH="C:/project/vcpkg/installed/x86-mingw-static;C:/opt" ^
   -DCMAKE_TOOLCHAIN_FILE="C:/project/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
   ..
 ```
 
+**Note on `CMAKE_POLICY_VERSION_MINIMUM=3.5`:** This project was written for an older version of CMake. If you use CMake 4.x (like 4.3.5 or 4.4), it will refuse to configure because the project's `cmake_minimum_required` is lower than the minimum allowed by CMake 4. Adding this flag tells CMake to accept the old policy.
 **Note:** if you're re-running `cmake` in an existing `build` folder (for example, after a failed first attempt), delete `build\CMakeCache.txt` first. Otherwise CMake may keep a stale, empty `CMAKE_BUILD_TYPE` from a previous run even though you're passing `-DCMAKE_BUILD_TYPE=Release` again — which also causes it to pick up `proj`/`libaec` from vcpkg's `debug\lib\` instead of `lib\`, producing a slower, unoptimized binary.
 
 ---
