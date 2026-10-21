@@ -559,6 +559,19 @@ void Grib2Record::readAltitude (gribfield *gfld)
 		levelType = LV_TYPE_NOT_DEFINED;  // Highest tropospheric freezing level
     else if (surfaceType1==192)
         levelType = LV_PRIVATE;           //icon ml_cape for instance
+	else if (surfaceType1==241 && discipline==10) {
+		// NOAA WW3 swell partitions (shts, mpts, swdir): keep only
+		// partition 1 (dominant swell); 2 and 3 would collide on the
+		// same DataCode key.
+		if (surfaceValue1 == 1) {
+			levelType  = LV_GND_SURF;
+			levelValue = 0;
+		}
+		else {
+			levelType  = LV_TYPE_NOT_DEFINED;
+			levelValue = 0;
+		}
+	}
 	// Unknown level types
 	else {
 //        DBG("Unknown altitude: surfaceType1=%lld surfaceScale1=%lld surfaceValue1=%ld",surfaceType1 ,surfaceScale1, surfaceValue1);
