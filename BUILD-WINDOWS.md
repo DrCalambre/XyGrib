@@ -52,17 +52,15 @@ C:\opt\
 
 ---
 
-## 3. Clone the patched branch
+## 3. Clone the main branch
 
 Open Git Bash:
 
 ```bash
-git clone -b fix-swell-241 https://github.com/DrCalambre/XyGrib C:\project\xygrib
+git clone https://github.com/DrCalambre/XyGrib C:\project\xygrib
 ```
 
-*(If the fix has been merged into `frfa/XyGrib` main by the time you read this, you can clone that instead — but double-check it's a clean build first).*
-
-**Note:** the `fix-swell-241` branch actually carries two commits — the swell patch itself, and an earlier build fix that adds a missing `aecunpack.c` file plus a CMakeLists update for g2clib. Both are needed to compile cleanly from a fresh clone.
+**Note:** The `main` branch is synced with the latest official release from `frfa/XyGrib` (v1.3.1) and includes the merged `fix-swell-241` patch. It also includes the missing `aecunpack.c` file and the CMakeLists update for g2clib, so it compiles cleanly from a fresh clone.
 
 ---
 
@@ -140,17 +138,19 @@ If you are using the modern PROJ installed via `vcpkg` (step 2.1), the link step
 Modern PROJ uses SQLite internally to store its database of coordinate transformations. However, CMake sometimes fails to pass the SQLite library to the linker when it resolves PROJ dynamically from `vcpkg`.
 
 **The Solution:**
-Follow the same **Manual Linking** workaround as Known Issue 1 — rebuild `objects.a` and link with `--whole-archive` — but append the SQLite library path and flag at the very end of the final link command:
+Follow the same **Manual Linking** workaround as Known Issue 1, but you must use the **real paths** for the MinGW tools. In Qt 5.13.2, the `ar.exe` is located in the `i686-w64-mingw32\bin\` subfolder, and the compiler is named `i686-w64-mingw32-c++.exe`.
+
+Run these three commands **one by one** from `C:\project\xygrib\build\src`:
 
 ```cmd
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\XyGrib.dir/objects.a
-C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\ar.exe qc CMakeFiles\XyGrib.dir/objects.a @CMakeFiles\XyGrib.dir\objects1.rsp
-C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\c++.exe -mwindows -Wl,--whole-archive CMakeFiles\XyGrib.dir/objects.a -Wl,--no-whole-archive -o XyGrib.exe -Wl,--out-implib,libXyGrib.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\XyGrib.dir\linkLibs.rsp -LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\XyGrib.dir\objects.a
+
+"C:\Qt\Qt5.13.2\Tools\mingw730_32\i686-w64-mingw32\bin\ar.exe" qc CMakeFiles\XyGrib.dir\objects.a @CMakeFiles\XyGrib.dir\objects1.rsp
+
+"C:\Qt\Qt5.13.2\Tools\mingw730_32\bin\i686-w64-mingw32-c++.exe" -mwindows -Wl,--whole-archive CMakeFiles\XyGrib.dir\objects.a -Wl,--no-whole-archive -o XyGrib.exe -Wl,--out-implib,libXyGrib.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\XyGrib.dir\linkLibs.rsp -LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3
 ```
 
-*(Run this from `C:\project\xygrib\build\src`, where the `.rsp` files live. This is the exact command CMake generates in `link.txt`, with `-LC:/project/vcpkg/installed/x86-mingw-static/lib -lsqlite3` appended at the end.)*
-
-If you see the command finish without errors, you will have a valid `XyGrib.exe` (around 113 MB) in that folder.
+If you see the command finish without errors, you will have a valid `XyGrib.exe` in that folder.
 
 ---
 
@@ -220,6 +220,21 @@ C:\XyGrib_Portable\
 - `libopenjp2.dll`
 
 Without these, `XyGrib.exe` will fail to start on any machine that doesn't have Qt/MinGW installed, even though the portable folder looks complete otherwise.
+
+---
+
+### 7.5. OpenSSL 1.1.x (for NOAA NOMADS downloads)
+
+If you try to download a GRIB from within XyGrib and the progress bar freezes at `+0h`, it means the Qt5Network module cannot establish the HTTPS connection. Qt 5.13.2 requires **OpenSSL 1.1.x** (32-bit), but `windeployqt` does not copy these DLLs automatically.
+
+**The Fix:**
+1. Download the `crypto_ssl_1_1.dll` file from the public Kaspersky repository (version 1.1.1l, i386):
+   `http://www.kaspersky-labs.com/updates/ossl/1.1.1l/i386/win/crypto_ssl_1_1.dll`
+2. Make **two copies** of this file in your portable folder (`C:\XyGrib_Portable`).
+3. Rename the first copy to **`libssl-1_1.dll`**.
+4. Rename the second copy to **`libcrypto-1_1.dll`**.
+
+After copying these files, XyGrib will successfully fetch data from NOAA NOMADS. No reboot or PATH changes are required.
 
 ---
 
