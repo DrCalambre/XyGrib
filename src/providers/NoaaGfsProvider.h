@@ -5,6 +5,9 @@ XyGrib: meteorological GRIB file viewer
 #ifndef NOAA_GFS_PROVIDER_H
 #define NOAA_GFS_PROVIDER_H
 
+#include <QElapsedTimer>
+#include <QTimer>
+
 #include "AbstractGribProvider.h"
 #include <QVector>
 #include <QPair>
@@ -47,6 +50,14 @@ private:
     void processNextWaveStep();
     QUrl buildWaveFilterUrl(int hour);
     void finishDownload();
+
+    // Pacing NOMADS: >= 10 s entre el FIN de una respuesta y el inicio de la siguiente
+    // (pedido por la pagina oficial del filtro GRIB). Solo aplica a nomads.ncep.noaa.gov;
+    // las peticiones a S3 (.idx / rangos de bytes) no pasan por aqui.
+    static const int kNomadsPauseMs = 10000;
+    QElapsedTimer lastNomadsEnd;   // invalido hasta la primera respuesta
+    int downloadGeneration = 0;    // +1 por cada startDownload: invalida esperas pendientes
+    void nomadsGet(const QUrl &url, void (NoaaGfsProvider::*slot)());
 
     GribRequestParams requestParams;
     QString cycleDate; // YYYYMMDD

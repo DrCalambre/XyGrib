@@ -49,6 +49,7 @@ void NoaaGfsProvider::startDownload(const GribRequestParams &params)
 {
     requestParams = params;
     isAborted = false;
+    downloadGeneration++;   // descarta peticiones en espera de una descarga anterior
     accumulatedGribData.clear();
     totalBytesDownloaded = 0;
     currentStepIndex = 0;
@@ -274,20 +275,37 @@ QUrl NoaaGfsProvider::buildNomadsFilterUrl(int hour)
     return url;
 }
 
+// Unico punto de salida hacia NOMADS: espera lo que falte y luego pide.
+void NoaaGfsProvider::nomadsGet(const QUrl &url, void (NoaaGfsProvider::*slot)())
+{
+    int remaining = 0;
+    if (lastNomadsEnd.isValid())
+        remaining = kNomadsPauseMs - (int) lastNomadsEnd.elapsed();
+    if (remaining < 0) remaining = 0;
+
+    const int gen = downloadGeneration;
+    QTimer::singleShot(remaining, this, [this, url, slot, gen]() {
+        // abortado, o reiniciado, durante la espera
+        if (isAborted || gen != downloadGeneration) return;
+        QNetworkRequest request = Util::makeNetworkRequest(url.toString());
+        if (currentReply) {
+            currentReply->deleteLater();
+        }
+        currentReply = networkManager->get(request);
+        connect(currentReply, &QNetworkReply::finished, this, slot);
+    });
+}
+
 void NoaaGfsProvider::fetchNomadsForStep(int hour)
 {
     QUrl nomadsUrl = buildNomadsFilterUrl(hour);
 
-    QNetworkRequest request = Util::makeNetworkRequest(nomadsUrl.toString());
-    if (currentReply) {
-        currentReply->deleteLater();
-    }
-    currentReply = networkManager->get(request);
-    connect(currentReply, SIGNAL(finished()), this, SLOT(slotNomadsStepFinished()));
+    nomadsGet(nomadsUrl, &NoaaGfsProvider::slotNomadsStepFinished);
 }
 
 void NoaaGfsProvider::slotNomadsStepFinished()
 {
+    lastNomadsEnd.start();
     if (isAborted) return;
 
     if (currentReply && currentReply->error() == QNetworkReply::NoError) {
@@ -552,16 +570,12 @@ void NoaaGfsProvider::processNextWaveStep()
     emit signalGribSendMessage(tr("Fetching NOAA GFS-Wave (+%1h, bounded area)...").arg(currentHour));
     emit signalGribReadProgress(1, percent, 100);
 
-    QNetworkRequest request = Util::makeNetworkRequest(buildWaveFilterUrl(currentHour).toString());
-    if (currentReply) {
-        currentReply->deleteLater();
-    }
-    currentReply = networkManager->get(request);
-    connect(currentReply, SIGNAL(finished()), this, SLOT(slotWaveStepFinished()));
+    nomadsGet(buildWaveFilterUrl(currentHour), &NoaaGfsProvider::slotWaveStepFinished);
 }
 
 void NoaaGfsProvider::slotWaveStepFinished()
 {
+    lastNomadsEnd.start();
     if (isAborted) return;
 
     // Three outcomes, reported differently to the user:
