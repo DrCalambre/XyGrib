@@ -49,7 +49,7 @@ void NoaaGfsProvider::startDownload(const GribRequestParams &params)
 {
     requestParams = params;
     isAborted = false;
-    downloadGeneration++;   // descarta peticiones en espera de una descarga anterior
+    downloadGeneration++;   // drop requests still waiting from a previous download
     accumulatedGribData.clear();
     totalBytesDownloaded = 0;
     currentStepIndex = 0;
@@ -274,18 +274,18 @@ QUrl NoaaGfsProvider::buildNomadsFilterUrl(int hour)
     return url;
 }
 
-// Unico punto de salida hacia NOMADS: espera lo que falte y luego pide.
-// Durante la espera informa la cuenta regresiva; al terminar emite fetchMsg.
+// Single exit point towards NOMADS: waits for whatever is left of the pause, then requests.
+// While waiting it reports the countdown; when done it emits fetchMsg.
 void NoaaGfsProvider::nomadsGet(const QUrl &url, void (NoaaGfsProvider::*slot)(), const QString &fetchMsg)
 {
     nomadsTick(url, slot, downloadGeneration, fetchMsg);
 }
 
-// Un paso de la espera. Reevalua el reloj lastNomadsEnd en cada tick (sin deriva)
-// y se re-arma con singleShot: no hay QTimer que liberar.
+// One step of the wait. Re-reads the lastNomadsEnd clock on every tick (no drift)
+// and re-arms itself with singleShot, so there is no QTimer object to free.
 void NoaaGfsProvider::nomadsTick(const QUrl &url, void (NoaaGfsProvider::*slot)(), int gen, const QString &fetchMsg)
 {
-    // abortado, o reiniciado, durante la espera: salir sin emitir nada
+    // aborted, or restarted, while waiting: leave without emitting anything
     if (isAborted || gen != downloadGeneration) return;
 
     int remaining = 0;

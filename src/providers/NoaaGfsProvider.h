@@ -51,12 +51,12 @@ private:
     QUrl buildWaveFilterUrl(int hour);
     void finishDownload();
 
-    // Pacing NOMADS: >= 10 s entre el FIN de una respuesta y el inicio de la siguiente
-    // (pedido por la pagina oficial del filtro GRIB). Solo aplica a nomads.ncep.noaa.gov;
-    // las peticiones a S3 (.idx / rangos de bytes) no pasan por aqui.
+    // NOMADS pacing: >= 10 s between the END of one response and the start of the next
+    // (requested by the official GRIB filter page). Applies only to nomads.ncep.noaa.gov;
+    // S3 requests (.idx / byte ranges) do not go through here.
     static const int kNomadsPauseMs = 10000;
-    QElapsedTimer lastNomadsEnd;   // invalido hasta la primera respuesta
-    int downloadGeneration = 0;    // +1 por cada startDownload: invalida esperas pendientes
+    QElapsedTimer lastNomadsEnd;   // invalid until the first response
+    int downloadGeneration = 0;    // +1 per startDownload: invalidates pending waits
     void nomadsGet(const QUrl &url, void (NoaaGfsProvider::*slot)(), const QString &fetchMsg);
     void nomadsTick(const QUrl &url, void (NoaaGfsProvider::*slot)(), int gen, const QString &fetchMsg);
 
