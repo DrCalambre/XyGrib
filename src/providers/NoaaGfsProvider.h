@@ -57,7 +57,8 @@ private:
     static const int kNomadsPauseMs = 10000;
     QElapsedTimer lastNomadsEnd;   // invalido hasta la primera respuesta
     int downloadGeneration = 0;    // +1 por cada startDownload: invalida esperas pendientes
-    void nomadsGet(const QUrl &url, void (NoaaGfsProvider::*slot)());
+    void nomadsGet(const QUrl &url, void (NoaaGfsProvider::*slot)(), const QString &fetchMsg);
+    void nomadsTick(const QUrl &url, void (NoaaGfsProvider::*slot)(), int gen, const QString &fetchMsg);
 
     GribRequestParams requestParams;
     QString cycleDate; // YYYYMMDD
