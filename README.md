@@ -7,8 +7,7 @@ Companion fork of [frfa/XyGrib](https://github.com/frfa/XyGrib).
 When the opengribs server went down in September 2026, XyGrib could no longer fetch
 GFS and WW3 wave data through it. During the following weeks, the workaround was a
 separate Bash script,
-[GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB](https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast),
-                                                 
+[GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast](https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast),
 
 which fetched the GRIB2 files with `filter_gfswave.pl` and respected NOMADS' request
 pacing by hand. That script kept the wave forecast usable in XyGrib until this fork's
@@ -43,6 +42,12 @@ interactive use inside XyGrib, and scheduled/headless fetching outside it.
 
 The fork does not bundle `aecunpack.c`. Building against a clean `frfa/main` requires
 that file locally (see PR #4 for details). Windows: see `BUILD-WINDOWS.md`.
+
+## Support
+
+If this release is useful to you, you can
+[sponsor its development on GitHub](https://github.com/sponsors/DrCalambre) or
+[buy me a coffee](https://cafecito.app/drcalambre).
 
 ---
 
