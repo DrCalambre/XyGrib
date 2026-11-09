@@ -57,8 +57,11 @@ git switch feature/nomads-pacing
 
 ```bash
 sudo apt update
-sudo apt install build-essential cmake qtbase5-dev qttools5-dev-tools \
-    libqt5serialport5-dev libnova-dev libopenjpeg-dev libpng-dev g++
+sudo apt install build-essential git cmake \
+    qtbase5-dev qttools5-dev-tools libqt5svg5-dev libqt5network5 \
+    libqt5printsupport5 libqt5serialport5-dev \
+    libpng-dev libopenjp2-7-dev libnova-dev libproj-dev \
+    zlib1g-dev libbz2-dev libaec-dev
 ```
 
 ### 3. Build
@@ -87,7 +90,7 @@ The binary is at `build/src/XyGrib`.
   `cmake -S . -B /tmp/xygrib-build` if you prefer to keep the working tree clean.
 - For a build of the stable base only (swell fix, no native provider), use
   `fix-swell-241`, which also includes `aecunpack.c`.
-  
+
 ## ❤️ Support
 
 If this release is useful to you, you can
