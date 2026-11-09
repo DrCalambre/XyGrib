@@ -7,7 +7,8 @@ Companion fork of [frfa/XyGrib](https://github.com/frfa/XyGrib).
 When the opengribs server went down in September 2026, XyGrib could no longer fetch
 GFS and WW3 wave data through it. During the following weeks, the workaround was a
 separate Bash script,
-[GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB](https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB),
+[GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB](https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast),
+                                                 
 which fetched the GRIB2 files with `filter_gfswave.pl` and respected NOMADS' request
 pacing by hand. That script kept the wave forecast usable in XyGrib until this fork's
 native provider took over.
