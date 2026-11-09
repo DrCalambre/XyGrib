@@ -47,13 +47,7 @@ The most complete branch is **`feature/nomads-pacing`**: native GFS/GFS-Wave pro
 CSNOW/CFRZR, NOMADS pacing (10 s between fetches) and the countdown in the download
 dialog. Use it to build and test the fork's current functionality.
 
-### 1. Switch to the right branch
-
-```bash
-git switch feature/nomads-pacing
-```
-
-### 2. Install dependencies (Debian / antiX / derivatives)
+### 1. Install dependencies (Debian / antiX / derivatives)
 
 ```bash
 sudo apt update
@@ -64,10 +58,17 @@ sudo apt install build-essential git cmake \
     zlib1g-dev libbz2-dev libaec-dev
 ```
 
+### 2. Switch to the right branch
+
+```bash
+git clone https://github.com/DrCalambre/XyGrib
+cd XyGrib
+git switch feature/nomads-pacing
+```
+
 ### 3. Build
 
 ```bash
-# from the repository root
 rm -rf build
 mkdir build
 cd build
