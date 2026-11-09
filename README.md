@@ -8,7 +8,6 @@ When the opengribs server went down in September 2026, XyGrib could no longer fe
 GFS and WW3 wave data through it. During the following weeks, the workaround was a
 separate Bash script,
 [GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast](https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast),
-
 which fetched the GRIB2 files with `filter_gfswave.pl` and respected NOMADS' request
 pacing by hand. That script kept the wave forecast usable in XyGrib until this fork's
 native provider took over.
@@ -38,12 +37,58 @@ for example a cron (or anacron) job that refreshes a 72 h GRIB file on a schedul
 independent of the GUI. The native provider and the script now cover different needs:
 interactive use inside XyGrib, and scheduled/headless fetching outside it.
 
-## Build
+## Build and test (Linux)
 
-The fork does not bundle `aecunpack.c`. Building against a clean `frfa/main` requires
-that file locally (see PR #4 for details). Windows: see `BUILD-WINDOWS.md`.
+`main` and the `pr/*` branches do **not** compile out of the box: they descend from
+`frfa/main`, where `aecunpack.c` was removed from `g2clib` while still listed in
+`CMakeLists.txt`. The `feature/*` branches include that file and compile cleanly.
 
-### ❤️ Support
+The most complete branch is **`feature/nomads-pacing`**: native GFS/GFS-Wave provider,
+CSNOW/CFRZR, NOMADS pacing (10 s between fetches) and the countdown in the download
+dialog. Use it to build and test the fork's current functionality.
+
+### 1. Switch to the right branch
+
+```bash
+git switch feature/nomads-pacing
+```
+
+### 2. Install dependencies (Debian / antiX / derivatives)
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake qtbase5-dev qttools5-dev-tools \
+    libqt5serialport5-dev libnova-dev libopenjpeg-dev libpng-dev g++
+```
+
+### 3. Build
+
+```bash
+# from the repository root
+rm -rf build
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
+```
+
+### 4. Run
+
+```bash
+./src/XyGrib
+```
+
+The binary is at `build/src/XyGrib`.
+
+### Notes
+
+- The `build/` directory is created inside the repository (untracked by git). Remove it
+  (`rm -rf build`) before switching branches, or build out of tree with
+  `cmake -S . -B /tmp/xygrib-build` if you prefer to keep the working tree clean.
+- For a build of the stable base only (swell fix, no native provider), use
+  `fix-swell-241`, which also includes `aecunpack.c`.
+  
+## ❤️ Support
 
 If this release is useful to you, you can
 [sponsor its development on GitHub](https://github.com/sponsors/DrCalambre) or
