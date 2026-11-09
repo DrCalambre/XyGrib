@@ -43,7 +43,7 @@ interactive use inside XyGrib, and scheduled/headless fetching outside it.
 The fork does not bundle `aecunpack.c`. Building against a clean `frfa/main` requires
 that file locally (see PR #4 for details). Windows: see `BUILD-WINDOWS.md`.
 
-## Support
+### ❤️ Support
 
 If this release is useful to you, you can
 [sponsor its development on GitHub](https://github.com/sponsors/DrCalambre) or
