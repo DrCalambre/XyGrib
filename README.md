@@ -1,3 +1,51 @@
+# XyGrib — DrCalambre fork
+
+Companion fork of [frfa/XyGrib](https://github.com/frfa/XyGrib).
+
+## Background: keeping XyGrib usable after the opengribs server went down
+
+When the opengribs server went down in September 2026, XyGrib could no longer fetch
+GFS and WW3 wave data through it. During the following weeks, the workaround was a
+separate Bash script,
+[GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB](https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB),
+which fetched the GRIB2 files with `filter_gfswave.pl` and respected NOMADS' request
+pacing by hand. That script kept the wave forecast usable in XyGrib until this fork's
+native provider took over.
+
+## What this fork adds
+
+- **Native NOMADS GFS/GFS-Wave provider:** downloads GFS + WW3 wave files directly from
+  NOMADS, doing internally what the external script used to do. No wrapper needed.
+- **NOMADS pacing:** enforces the 10 s between fetches requested by NOMADS (SCN 21-32),
+  with a visible countdown in the download dialog.
+- **Swell (surfaceType1=241):** makes WW3 swell height/period/direction readable, so
+  "Swell" shows up in the MeteoTable instead of being discarded.
+- **CSNOW / CFRZR:** downloads CSNOW (categorical snow) and CFRZR (categorical freezing
+  rain) in the same NOMADS request; `sde` (snow depth) is displayed.
+
+## Upstream status
+
+- **PR #4** (native NOMADS provider) and **PR #5** (CSNOW/CFRZR) are open against
+  `frfa/XyGrib`, as single-commit branches cherry-picked onto `frfa/main` (no unrelated
+  commits).
+- The **pacing + countdown** work stays local, pending #4.
+
+## What about the script?
+
+The script is **not deprecated**. It remains useful for automated, unattended tasks —
+for example a cron (or anacron) job that refreshes a 72 h GRIB file on a schedule,
+independent of the GUI. The native provider and the script now cover different needs:
+interactive use inside XyGrib, and scheduled/headless fetching outside it.
+
+## Build
+
+The fork does not bundle `aecunpack.c`. Building against a clean `frfa/main` requires
+that file locally (see PR #4 for details). Windows: see `BUILD-WINDOWS.md`.
+
+---
+
+## Upstream README (inherited, unchanged)
+
 # XyGrib - Weather Forecast Visualization
 Fork of zyGrib-8.0.1 under a new name and a new home https://opengribs.org
 
