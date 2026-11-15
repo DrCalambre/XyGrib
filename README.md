@@ -12,23 +12,40 @@ which fetched the GRIB2 files with `filter_gfswave.pl` and respected NOMADS' req
 pacing by hand. That script kept the wave forecast usable in XyGrib until this fork's
 native provider took over.
 
-## What this fork adds
+## What this fork adds## What this fork adds
+
+All of the following is merged into [frfa/XyGrib](https://github.com/frfa/XyGrib) `main`;
+this fork tracks it.
 
 - **Native NOMADS GFS/GFS-Wave provider:** downloads GFS + WW3 wave files directly from
   NOMADS, doing internally what the external script used to do. No wrapper needed.
 - **NOMADS pacing:** enforces the 10 s between fetches requested by NOMADS (SCN 21-32),
-  with a visible countdown in the download dialog.
+  with a visible countdown in the download dialog and a progress bar that advances
+  during the waits.
 - **Swell (surfaceType1=241):** makes WW3 swell height/period/direction readable, so
   "Swell" shows up in the MeteoTable instead of being discarded.
 - **CSNOW / CFRZR:** downloads CSNOW (categorical snow) and CFRZR (categorical freezing
   rain) in the same NOMADS request; `sde` (snow depth) is displayed.
+- **GFS 0.5°:** uses the correct NOMADS file name (`pgrb2full`) so the 0.5° grid is
+  fetched with the bounding box instead of silently falling back to a much larger download.
+- **CCSDS (`grid_ccsds`) decoding:** fixes `aecunpack.c`, which mixed up the libaec flags
+  and produced garbage values on CCSDS-packed GRIB2 files.
 
 ## Upstream status
 
-- **PR #4** (native NOMADS provider) and **PR #5** (CSNOW/CFRZR) are open against
-  `frfa/XyGrib`, as single-commit branches cherry-picked onto `frfa/main` (no unrelated
-  commits).
-- The **pacing + countdown** work stays local, pending #4.
+All pull requests were merged into `frfa/XyGrib` `main`:
+
+- [#4](https://github.com/frfa/XyGrib/pull/4): native NOMADS GFS + GFS-Wave provider
+- [#5](https://github.com/frfa/XyGrib/pull/5): CSNOW / CFRZR in the NOMADS filter URL
+- [#6](https://github.com/frfa/XyGrib/pull/6): GFS 0.5° file name
+- [#7](https://github.com/frfa/XyGrib/pull/7): NOMADS pacing and countdown
+- [#8](https://github.com/frfa/XyGrib/pull/8): progress bar during the waits
+- [#10](https://github.com/frfa/XyGrib/pull/10): CCSDS decoding in `aecunpack.c`
+
+The missing `aecunpack.c` reported in
+[issue #9](https://github.com/frfa/XyGrib/issues/9) is also fixed upstream.
+
+This fork's `main` is `frfa/main` plus this README, `BUILD-WINDOWS.md` and screenshots.
 
 ## What about the script?
 
@@ -39,13 +56,7 @@ interactive use inside XyGrib, and scheduled/headless fetching outside it.
 
 ## Build and test (Linux)
 
-`main` and the `pr/*` branches do **not** compile out of the box: they descend from
-`frfa/main`, where `aecunpack.c` was removed from `g2clib` while still listed in
-`CMakeLists.txt`. The `feature/*` branches include that file and compile cleanly.
-
-The most complete branch is **`feature/nomads-pacing`**: native GFS/GFS-Wave provider,
-CSNOW/CFRZR, NOMADS pacing (10 s between fetches) and the countdown in the download
-dialog. Use it to build and test the fork's current functionality.
+`main` builds out of the box from a clean clone (verified on antiX with Qt 5.15).
 
 ### 1. Install dependencies (Debian / antiX / derivatives)
 
@@ -58,18 +69,16 @@ sudo apt install build-essential git cmake \
     zlib1g-dev libbz2-dev libaec-dev
 ```
 
-### 2. Switch to the right branch
+### 2. Clone
 
 ```bash
 git clone https://github.com/DrCalambre/XyGrib
 cd XyGrib
-git switch feature/nomads-pacing
 ```
 
 ### 3. Build
 
 ```bash
-rm -rf build
 mkdir build
 cd build
 cmake ..
@@ -86,11 +95,11 @@ The binary is at `build/src/XyGrib`.
 
 ### Notes
 
-- The `build/` directory is created inside the repository (untracked by git). Remove it
-  (`rm -rf build`) before switching branches, or build out of tree with
-  `cmake -S . -B /tmp/xygrib-build` if you prefer to keep the working tree clean.
-- For a build of the stable base only (swell fix, no native provider), use
-  `fix-swell-241`, which also includes `aecunpack.c`.
+- The `build/` directory is created inside the repository (untracked by git). Build out
+  of tree with `cmake -S . -B /tmp/xygrib-build` if you prefer to keep the working tree
+  clean.
+- Swell support, the native provider, pacing and the CCSDS fix are all included in `main`.
+  The older `feature/*` and `fix-swell-241` branches are no longer needed.
 
 ## ❤️ Support
 
