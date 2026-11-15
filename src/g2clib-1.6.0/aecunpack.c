@@ -1,19 +1,19 @@
 /*
  * aecunpack.c
  *
- * Desempaqueta un campo de datos comprimido con CCSDS / AEC (Adaptive
- * Entropy Coding), segun la Data Representation Template 5.42 de GRIB2.
+ * Unpacks a data field compressed with CCSDS / AEC (Adaptive Entropy
+ * Coding), following GRIB2 Data Representation Template 5.42.
  *
- * Requiere libaec (Debian/antiX: libaec-dev, libaec0).
+ * Requires libaec (Debian/Ubuntu/antiX: libaec-dev).
  *
- * idrstmpl[0] : valor de referencia (IEEE 32 bits)
- * idrstmpl[1] : factor de escala binario
- * idrstmpl[2] : factor de escala decimal
- * idrstmpl[3] : numero de bits por valor
- * idrstmpl[4] : tipo de campo original
- * idrstmpl[5] : mascara de opciones CCSDS (flags de libaec)
- * idrstmpl[6] : tamano de bloque
- * idrstmpl[7] : intervalo de muestreo de referencia (RSI)
+ * idrstmpl[0] : reference value (IEEE 32 bits)
+ * idrstmpl[1] : binary scale factor
+ * idrstmpl[2] : decimal scale factor
+ * idrstmpl[3] : number of bits per value
+ * idrstmpl[4] : type of original field
+ * idrstmpl[5] : CCSDS options mask (libaec flags)
+ * idrstmpl[6] : block size
+ * idrstmpl[7] : reference sample interval (RSI)
  */
 
 #include <stdio.h>
@@ -39,7 +39,7 @@ g2int aecunpack(unsigned char *cpack, g2int len, g2int *idrstmpl,
     nbits = idrstmpl[3];
     flags = (unsigned int)idrstmpl[5];
 
-    /* nbits == 0 : campo constante igual al valor de referencia */
+    /* nbits == 0 : constant field equal to the reference value */
     if (nbits == 0) {
         for (j = 0; j < ndpts; j++)
             fld[j] = ref * dscale;
@@ -47,12 +47,12 @@ g2int aecunpack(unsigned char *cpack, g2int len, g2int *idrstmpl,
     }
 
     if (nbits > 32) {
-        fprintf(stderr, "aecunpack: %d bits por muestra no soportados.\n",
+        fprintf(stderr, "aecunpack: %d bits per sample not supported.\n",
                 (int)nbits);
         return 1;
     }
 
-    /* Tamano de muestra en el buffer de salida, segun las reglas de libaec */
+    /* Sample size in the output buffer, following libaec's rules */
     if (nbits <= 8)
         bytes_per_sample = 1;
     else if (nbits <= 16)
@@ -65,7 +65,7 @@ g2int aecunpack(unsigned char *cpack, g2int len, g2int *idrstmpl,
     outlen = (size_t)ndpts * (size_t)bytes_per_sample;
     ctmp = (unsigned char *)calloc(outlen, 1);
     if (ctmp == NULL) {
-        fprintf(stderr, "aecunpack: sin memoria. Campo NO desempaquetado.\n");
+        fprintf(stderr, "aecunpack: out of memory. Field NOT unpacked.\n");
         return 1;
     }
 
@@ -81,13 +81,13 @@ g2int aecunpack(unsigned char *cpack, g2int len, g2int *idrstmpl,
 
     ret = aec_buffer_decode(&strm);
     if (ret != AEC_OK) {
-        fprintf(stderr, "aecunpack: error %d de libaec. "
-                        "Campo NO desempaquetado.\n", ret);
+        fprintf(stderr, "aecunpack: libaec error %d. "
+                        "Field NOT unpacked.\n", ret);
         free(ctmp);
         return 1;
     }
 
-    /* Reconstruccion de los enteros y aplicacion de las escalas */
+    /* Rebuild the integers and apply the scale factors */
     for (j = 0; j < ndpts; j++) {
         unsigned char *p = ctmp + (size_t)j * (size_t)bytes_per_sample;
         unsigned long v = 0;
